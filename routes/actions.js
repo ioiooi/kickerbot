@@ -1,17 +1,43 @@
 const express = require('express');
 const router = express.Router();
+const fetch = require('node-fetch');
 const slack = require('../lib/slack');
 const helper = require('../lib/helper');
+const data = require('../data');
 
 router.post('/', (req, res) => {
   // extract action value, user id and original message
   const {
     actions: [{ value: action }],
+    callback_id,
     user: { id: userId },
     original_message: message
   } = JSON.parse(req.body['payload']);
-  updateMessage(message, action, userId);
-  res.json(message);
+  data.push(JSON.parse(req.body['payload']));
+
+  switch (callback_id) {
+    case 'kicker_game':
+      updateMessage(message, action, userId);
+      res.json(message);
+      break;
+    case 'kicker_delete':
+      // actions.value is already stringified - delete kicker_game
+      fetch('https://slack.com/api/chat.delete', {
+        method: 'POST',
+        body: action,
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`
+        }
+      })
+        .then(res => res.json())
+        .then(json => data.push(json));
+      res.status(200).end();
+      break;
+    default:
+      res.status(200).end();
+      break;
+  }
 });
 
 const updateMessage = (message, action, userId) => {
