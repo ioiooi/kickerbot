@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const fetch = require('node-fetch');
-const slack = require('../lib/slack');
+const slack = require('../lib/slackMessages');
+const slackApi = require('../lib/slackApi');
 const helper = require('../lib/helper');
 const data = require('../data');
 
@@ -12,48 +12,30 @@ router.post('/', (req, res) => {
   const playerArray = [user_id, ...helper.createArrayOfMatches(text, 'user')];
 
   if (time.length > 0) {
-    fetch('https://slack.com/api/chat.postMessage', {
-      method: 'POST',
-      body: JSON.stringify(createMessage(channel_id, time[0], playerArray)),
-      headers: {
-        'Content-type': 'application/json',
-        Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`
-      }
-    })
+    let message;
+    if (playerArray.length < 4) {
+      message = slack.createLookingForMoreMessage(
+        `<!channel> kicker ${time[0]}?`,
+        playerArray
+      );
+    } else {
+      message = slack.createGameReadyMessage(
+        `kicker ${time[0]}?`,
+        playerArray.slice(0, 4)
+      );
+    }
+
+    slackApi
+      .postMessage(channel_id, message)
       .then(res => res.json())
       .then(json => {
         data.slashMessageRes.push(json);
         const { channel, ts } = json;
-        const message = {
-          channel,
-          user: user_id,
-          attachments: [
-            {
-              fallback: 'Oops. That was not supposed to happen.',
-              text: 'Delete your game',
-              callback_id: 'kicker_delete',
-              attachment_type: 'default',
-              actions: [
-                {
-                  name: 'kicker_del',
-                  text: 'delete',
-                  type: 'button',
-                  style: 'danger',
-                  value: JSON.stringify({ channel, ts })
-                }
-              ]
-            }
-          ]
-        };
 
-        fetch('https://slack.com/api/chat.postEphemeral', {
-          method: 'POST',
-          body: JSON.stringify(message),
-          headers: {
-            'Content-type': 'application/json',
-            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`
-          }
-        })
+        slackApi
+          .postEphemeral(channel, user_id, {
+            attachments: slack.createDeleteGameMessage(channel, ts)
+          })
           .then(res => res.json())
           .then(json => data.slashEphemeralRes.push(json));
       })
@@ -64,20 +46,5 @@ router.post('/', (req, res) => {
 
   res.status(200).end();
 });
-
-const createMessage = (channelId, time, playerArray) => {
-  let attachments = slack.createLFMAttachment(playerArray);
-
-  if (playerArray.length >= 4) {
-    attachments = slack.createGameReadyAttachement(playerArray.slice(0, 4));
-  }
-
-  return {
-    channel: channelId,
-    response_type: 'in_channel',
-    text: `<!channel> kicker ${time}?`,
-    attachments
-  };
-};
 
 module.exports = router;
