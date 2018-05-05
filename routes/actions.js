@@ -80,13 +80,19 @@ const getPlayerArray = message => {
     ];
     // gameReadyMessage
   } else {
-    for (let obj of message.attachments[0].fields) {
-      for (let key in obj) {
-        if (key === 'value') {
-          playerArray = [
-            ...playerArray,
-            ...helper.createArrayOfMatches(obj[key], 'user')
-          ];
+    for (let attachement of message.attachments) {
+      for (let key in attachement) {
+        if (key === 'fields') {
+          for (let obj of attachement[key]) {
+            for (let key in obj) {
+              if (key === 'value') {
+                playerArray = [
+                  ...playerArray,
+                  ...helper.createArrayOfMatches(obj[key], 'user')
+                ];
+              }
+            }
+          }
         }
       }
     }
