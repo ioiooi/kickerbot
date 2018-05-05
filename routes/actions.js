@@ -13,7 +13,7 @@ router.post('/', (req, res) => {
     user: { id: userId },
     original_message: message
   } = JSON.parse(req.body['payload']);
-  data.push(JSON.parse(req.body['payload']));
+  data.actionReq.push(JSON.parse(req.body['payload']));
 
   switch (callback_id) {
     case 'kicker_game':
@@ -31,7 +31,7 @@ router.post('/', (req, res) => {
         }
       })
         .then(res => res.json())
-        .then(json => data.push(json));
+        .then(json => data.actionDeleteRes.push(json));
       res.status(200).end();
       break;
     default:

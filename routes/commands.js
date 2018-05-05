@@ -7,7 +7,7 @@ const data = require('../data');
 
 router.post('/', (req, res) => {
   const { text, user_id, channel_id } = req.body;
-  data.push(req.body);
+  data.slashReq.push(req.body);
   const time = helper.createArrayOfMatches(text, 'time');
   const playerArray = [user_id, ...helper.createArrayOfMatches(text, 'user')];
 
@@ -22,7 +22,7 @@ router.post('/', (req, res) => {
     })
       .then(res => res.json())
       .then(json => {
-        data.push(json);
+        data.slashMessageRes.push(json);
         const { channel, ts } = json;
         const message = {
           channel,
@@ -55,7 +55,7 @@ router.post('/', (req, res) => {
           }
         })
           .then(res => res.json())
-          .then(json => data.push(json));
+          .then(json => data.slashEphemeralRes.push(json));
       })
       .catch(err => console.log(err));
   } else {
