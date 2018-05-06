@@ -17,12 +17,17 @@ router.post('/', (req, res) => {
   data.actionReq.push(JSON.parse(req.body['payload']));
 
   if (callback_id === 'kicker_game') {
-    const message = createNewMessage(original_message, action, userId);
+    const message = createNewMessage(
+      original_message,
+      action,
+      userId,
+      channelId
+    );
     const { ts } = original_message;
     slackApi
       .updateMessage(channelId, ts, message)
       .then(res => res.json())
-      .then(json => console.log(json));
+      .then(json => {});
     res.status(200).end();
   } else if (callback_id === 'kicker_delete') {
     const { channel, ts } = JSON.parse(action);
@@ -36,7 +41,7 @@ router.post('/', (req, res) => {
   res.status(200).end();
 });
 
-const createNewMessage = (message, action, userId) => {
+const createNewMessage = (message, action, userId, channel) => {
   const playerArray = getPlayerArray(message);
   const index = helper.findStringInArray(playerArray, userId);
   const time = helper.createArrayOfMatches(message.text, 'time');
@@ -61,6 +66,7 @@ const createNewMessage = (message, action, userId) => {
       playerArray
     );
   } else {
+    notifyPlayers(channel, playerArray, message.text);
     return slack.createGameReadyMessage(
       `<!channel> kicker ${time[0]}?`,
       playerArray
@@ -99,6 +105,30 @@ const getPlayerArray = message => {
   }
 
   return playerArray;
+};
+
+const notifyPlayers = (channel, playerArray, text) => {
+  setTimeout(() => {
+    for (let player of playerArray) {
+      slackApi
+        .postEphemeral(channel, player, {
+          text: slack.createGameReadyNotificationMessage(player)
+        })
+        .then(res => res.json())
+        .then(json => {});
+    }
+  }, getTimeout(text));
+};
+
+const getTimeout = text => {
+  const time = helper.createArrayOfMatches(text, 'time')[0];
+  if (time === 'asap') return 0;
+  const hours = parseInt(time.slice(0, 2));
+  const minutes = parseInt(time.slice(3, 5));
+  const date = new Date().setHours(hours, minutes);
+  const now = Date.now();
+  // 2 minutes before
+  return date - now - 120000;
 };
 
 module.exports = router;
