@@ -43,14 +43,14 @@ const createNewMessage = (message, action, userId) => {
 
   // join game
   if (parseInt(action) === 0) {
-    if (index !== -1) return;
+    if (index !== -1) return message;
     // userId was not found
     playerArray.push(userId);
   }
 
   // leave game
   if (parseInt(action) === 1) {
-    if (index === -1) return;
+    if (index === -1) return message;
     // userId was found
     playerArray.splice(index, 1);
   }
