@@ -29,13 +29,32 @@ router.post('/', (req, res) => {
       .then(res => res.json())
       .then(json => {});
     res.status(200).end();
+  } else if (callback_id === 'kicker_leave') {
+    const { channel, ts, original_message } = JSON.parse(
+      action.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    );
+    const playerArray = getPlayerArray(original_message);
+    const index = helper.findStringInArray(playerArray, userId);
+    const time = helper.createArrayOfMatches(original_message.text, 'time');
+    playerArray.splice(index, 1);
+
+    const message = slack.createLookingForMoreMessage(
+      `<!channel> kicker ${time[0]}?`,
+      playerArray
+    );
+
+    slackApi
+      .updateMessage(channel, ts, message)
+      .then(res => res.json())
+      .then(json => {});
+    // res.json({ delete_original: true });
   } else if (callback_id === 'kicker_delete') {
     const { channel, ts } = JSON.parse(action);
     slackApi
       .deleteMessage(channel, ts)
       .then(res => res.json())
       .then(json => data.actionDeleteRes.push(json));
-    res.status(200).end();
+    res.json({ delete_original: true });
   }
 
   res.status(200).end();
