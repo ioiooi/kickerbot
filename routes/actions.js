@@ -16,7 +16,7 @@ router.post('/', (req, res) => {
   } = JSON.parse(req.body['payload']);
   data.actionReq.push(JSON.parse(req.body['payload']));
 
-  if (callback_id === 'kicker_game') {
+  if (callback_id === 'kicker_join') {
     const message = createNewMessage(
       original_message,
       action,
@@ -33,21 +33,12 @@ router.post('/', (req, res) => {
     const { channel, ts, original_message } = JSON.parse(
       action.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     );
-    const playerArray = getPlayerArray(original_message);
-    const index = helper.findStringInArray(playerArray, userId);
-    const time = helper.createArrayOfMatches(original_message.text, 'time');
-    playerArray.splice(index, 1);
-
-    const message = slack.createLookingForMoreMessage(
-      `<!channel> kicker ${time[0]}?`,
-      playerArray
-    );
-
+    const message = leaveGame(original_message, userId, channel);
     slackApi
       .updateMessage(channel, ts, message)
       .then(res => res.json())
       .then(json => {});
-    // res.json({ delete_original: true });
+    res.json({ delete_original: true });
   } else if (callback_id === 'kicker_delete') {
     const { channel, ts } = JSON.parse(action);
     slackApi
@@ -72,25 +63,43 @@ const createNewMessage = (message, action, userId, channel) => {
     playerArray.push(userId);
   }
 
-  // leave game
-  if (parseInt(action) === 1) {
-    if (index === -1) return message;
-    // userId was found
-    playerArray.splice(index, 1);
-  }
-
+  let newMessage;
   if (playerArray.length < 4) {
-    return slack.createLookingForMoreMessage(
+    newMessage = slack.createLookingForMoreMessage(
       `<!channel> kicker ${time[0]}?`,
       playerArray
     );
   } else {
     notifyPlayers(channel, playerArray, message.text);
-    return slack.createGameReadyMessage(
+    newMessage = slack.createGameReadyMessage(
       `<!channel> kicker ${time[0]}?`,
       playerArray
     );
   }
+
+  // leave button
+  const { ts } = message;
+  slackApi
+    .postEphemeral(channel, userId, {
+      attachments: slack.createLeaveMessage(channel, ts, newMessage)
+    })
+    .then(res => res.json())
+    .then(json => {});
+
+  return newMessage;
+};
+
+const leaveGame = (message, userId, channel) => {
+  const playerArray = getPlayerArray(message);
+  const index = helper.findStringInArray(playerArray, userId);
+  const time = helper.createArrayOfMatches(message.text, 'time');
+
+  playerArray.splice(index, 1);
+
+  return slack.createLookingForMoreMessage(
+    `<!channel> kicker ${time[0]}?`,
+    playerArray
+  );
 };
 
 const getPlayerArray = message => {

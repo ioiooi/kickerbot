@@ -33,13 +33,15 @@ router.post('/', (req, res) => {
         const { channel, ts, message } = json;
 
         // for loop every player in playerarray
-        // leave button
-        slackApi
-          .postEphemeral(channel, user_id, {
+        for (let player of playerArray) {
+          // leave button
+          slackApi
+          .postEphemeral(channel, player, {
             attachments: slack.createLeaveMessage(channel, ts, message)
           })
           .then(res => res.json())
           .then(json => {});
+        }
 
         // delete button
         slackApi
