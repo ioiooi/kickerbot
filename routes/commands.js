@@ -30,8 +30,20 @@ router.post('/', (req, res) => {
       .then(res => res.json())
       .then(json => {
         data.slashMessageRes.push(json);
-        const { channel, ts } = json;
+        const { channel, ts, message } = json;
 
+        // for loop every player in playerarray
+        for (let player of playerArray) {
+          // leave button
+          slackApi
+          .postEphemeral(channel, player, {
+            attachments: slack.createLeaveMessage(channel, ts, message)
+          })
+          .then(res => res.json())
+          .then(json => {});
+        }
+
+        // delete button
         slackApi
           .postEphemeral(channel, user_id, {
             attachments: slack.createDeleteGameMessage(channel, ts)
