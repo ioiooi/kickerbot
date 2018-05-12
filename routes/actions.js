@@ -17,33 +17,21 @@ router.post('/', (req, res) => {
   data.actionReq.push(JSON.parse(req.body['payload']));
 
   if (callback_id === 'kicker_join') {
-    const message = joinGame(
-      original_message,
-      action,
-      userId,
-      channelId
-    );
+    const message = joinGame(original_message, action, userId, channelId);
     const { ts } = original_message;
-    slackApi
-      .updateMessage(channelId, ts, message)
-      .then(res => res.json())
-      .then(json => {});
+    slackApi.updateMessage(channelId, ts, message).then(json => {});
     res.status(200).end();
   } else if (callback_id === 'kicker_leave') {
     const { channel, ts, original_message } = JSON.parse(
       action.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     );
     const message = leaveGame(original_message, userId, channel);
-    slackApi
-      .updateMessage(channel, ts, message)
-      .then(res => res.json())
-      .then(json => {});
+    slackApi.updateMessage(channel, ts, message).then(json => {});
     res.json({ delete_original: true });
   } else if (callback_id === 'kicker_delete') {
     const { channel, ts } = JSON.parse(action);
     slackApi
       .deleteMessage(channel, ts)
-      .then(res => res.json())
       .then(json => data.actionDeleteRes.push(json));
     res.json({ delete_original: true });
   }
@@ -74,7 +62,6 @@ const joinGame = (message, action, userId, channel) => {
     .postEphemeral(channel, userId, {
       attachments: slack.leaveMessage(channel, ts, newMessage)
     })
-    .then(res => res.json())
     .then(json => {});
 
   return newMessage;
@@ -133,7 +120,6 @@ const notifyPlayers = (channel, playerArray, text) => {
         .postEphemeral(channel, player, {
           text: slack.gameReadyNotificationMessage(player)
         })
-        .then(res => res.json())
         .then(json => {});
     }
   }, getTimeout(text));

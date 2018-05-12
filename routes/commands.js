@@ -19,10 +19,7 @@ router.post('/', async (req, res) => {
 
   const game = slack.lfmOrGameReady(time[0], players);
 
-  const gameMessageRes = await (await slackApi.postMessage(
-    channel_id,
-    game
-  )).json();
+  const gameMessageRes = await slackApi.postMessage(channel_id, game);
   const { channel, ts, message } = gameMessageRes;
 
   for (let player of players) {
@@ -31,7 +28,6 @@ router.post('/', async (req, res) => {
       .postEphemeral(channel, player, {
         attachments: slack.leaveMessage(channel, ts, message)
       })
-      .then(res => res.json())
       .then(json => {});
   }
 
@@ -40,7 +36,6 @@ router.post('/', async (req, res) => {
     .postEphemeral(channel, user_id, {
       attachments: slack.deleteGameMessage(channel, ts)
     })
-    .then(res => res.json())
     .then(json => data.slashEphemeralRes.push(json));
 
   res.status(200).end();
