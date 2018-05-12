@@ -5,56 +5,43 @@ const slackApi = require('../lib/slackApi');
 const helper = require('../lib/helper');
 const data = require('../data');
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { text, user_id, channel_id } = req.body;
   data.slashReq.push(req.body);
   const time = helper.createArrayOfMatches(text, 'time');
-  const playerArray = [user_id, ...helper.createArrayOfMatches(text, 'user')];
+  const players = [user_id, ...helper.createArrayOfMatches(text, 'user')];
 
-  if (time.length > 0) {
-    let message;
-    if (playerArray.length < 4) {
-      message = slack.createLookingForMoreMessage(
-        `<!channel> kicker ${time[0]}?`,
-        playerArray
-      );
-    } else {
-      message = slack.createGameReadyMessage(
-        `kicker ${time[0]}?`,
-        playerArray.slice(0, 4)
-      );
-    }
-
-    slackApi
-      .postMessage(channel_id, message)
-      .then(res => res.json())
-      .then(json => {
-        data.slashMessageRes.push(json);
-        const { channel, ts, message } = json;
-
-        // for loop every player in playerarray
-        for (let player of playerArray) {
-          // leave button
-          slackApi
-          .postEphemeral(channel, player, {
-            attachments: slack.createLeaveMessage(channel, ts, message)
-          })
-          .then(res => res.json())
-          .then(json => {});
-        }
-
-        // delete button
-        slackApi
-          .postEphemeral(channel, user_id, {
-            attachments: slack.createDeleteGameMessage(channel, ts)
-          })
-          .then(res => res.json())
-          .then(json => data.slashEphemeralRes.push(json));
-      })
-      .catch(err => console.log(err));
-  } else {
+  if (!time.length) {
     res.json({ text: '`asap` or `HH:mm`' });
+
+    return;
   }
+
+  const game = slack.lfmOrGameReady(time[0], players);
+
+  const gameMessageRes = await (await slackApi.postMessage(
+    channel_id,
+    game
+  )).json();
+  const { channel, ts, message } = gameMessageRes;
+
+  for (let player of players) {
+    // leave button
+    slackApi
+      .postEphemeral(channel, player, {
+        attachments: slack.leaveMessage(channel, ts, message)
+      })
+      .then(res => res.json())
+      .then(json => {});
+  }
+
+  // delete button
+  slackApi
+    .postEphemeral(channel, user_id, {
+      attachments: slack.deleteGameMessage(channel, ts)
+    })
+    .then(res => res.json())
+    .then(json => data.slashEphemeralRes.push(json));
 
   res.status(200).end();
 });

@@ -17,7 +17,7 @@ router.post('/', (req, res) => {
   data.actionReq.push(JSON.parse(req.body['payload']));
 
   if (callback_id === 'kicker_join') {
-    const message = createNewMessage(
+    const message = joinGame(
       original_message,
       action,
       userId,
@@ -51,37 +51,28 @@ router.post('/', (req, res) => {
   res.status(200).end();
 });
 
-const createNewMessage = (message, action, userId, channel) => {
-  const playerArray = getPlayerArray(message);
-  const index = helper.findStringInArray(playerArray, userId);
+const joinGame = (message, action, userId, channel) => {
+  const players = getPlayers(message);
+  const index = helper.findStringInArray(players, userId);
   const time = helper.createArrayOfMatches(message.text, 'time');
 
   // join game
   if (parseInt(action) === 0) {
     if (index !== -1) return message;
     // userId was not found
-    playerArray.push(userId);
+    players.push(userId);
   }
 
-  let newMessage;
-  if (playerArray.length < 4) {
-    newMessage = slack.createLookingForMoreMessage(
-      `<!channel> kicker ${time[0]}?`,
-      playerArray
-    );
-  } else {
-    notifyPlayers(channel, playerArray, message.text);
-    newMessage = slack.createGameReadyMessage(
-      `<!channel> kicker ${time[0]}?`,
-      playerArray
-    );
+  const newMessage = slack.lfmOrGameReady(time[0], players);
+  if (players.length >= 4) {
+    notifyPlayers(channel, players, message.text);
   }
 
   // leave button
   const { ts } = message;
   slackApi
     .postEphemeral(channel, userId, {
-      attachments: slack.createLeaveMessage(channel, ts, newMessage)
+      attachments: slack.leaveMessage(channel, ts, newMessage)
     })
     .then(res => res.json())
     .then(json => {});
@@ -90,7 +81,7 @@ const createNewMessage = (message, action, userId, channel) => {
 };
 
 const leaveGame = (message, userId, channel) => {
-  const playerArray = getPlayerArray(message);
+  const playerArray = getPlayers(message);
   const index = helper.findStringInArray(playerArray, userId);
   const time = helper.createArrayOfMatches(message.text, 'time');
 
@@ -102,7 +93,7 @@ const leaveGame = (message, userId, channel) => {
   );
 };
 
-const getPlayerArray = message => {
+const getPlayers = message => {
   let playerArray = [];
   // lookingForMoreMessage
   if (message.attachments[0].fields.length <= 1) {
@@ -140,7 +131,7 @@ const notifyPlayers = (channel, playerArray, text) => {
     for (let player of playerArray) {
       slackApi
         .postEphemeral(channel, player, {
-          text: slack.createGameReadyNotificationMessage(player)
+          text: slack.gameReadyNotificationMessage(player)
         })
         .then(res => res.json())
         .then(json => {});
