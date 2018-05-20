@@ -3,115 +3,37 @@ const router = express.Router();
 const slack = require('../lib/slackMessages');
 const slackApi = require('../lib/slackApi');
 const helper = require('../lib/helper');
-const data = require('../data');
+const { GameMap } = require('../rfctr/GameData');
+const GameState = require('../rfctr/GameState');
 
 router.post('/', (req, res) => {
-  // extract action value, callback_id, userId, channelId and original_message
   const {
-    actions: [{ value: action }],
     callback_id,
+    actions: [{ value: gameId }],
     user: { id: userId },
-    channel: { id: channelId },
-    original_message
+    channel: { id: channelId }
   } = JSON.parse(req.body['payload']);
-  data.actionReq.push(JSON.parse(req.body['payload']));
+  const game = GameMap.get(parseInt(gameId));
+  const gameState = new GameState(game);
 
   if (callback_id === 'kicker_join') {
-    const message = joinGame(original_message, action, userId, channelId);
-    const { ts } = original_message;
-    slackApi.updateMessage(channelId, ts, message).then(json => {});
-    res.status(200).end();
+    gameState.add(userId);
+    gameState.send();
+    // send leaveMessage
+    slackApi.postEphemeral(channelId, userId, slack.leaveMessage(gameId));
   } else if (callback_id === 'kicker_leave') {
-    const { channel, ts, original_message } = JSON.parse(
-      action.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    );
-    const message = leaveGame(original_message, userId, channel);
-    slackApi.updateMessage(channel, ts, message).then(json => {});
+    gameState.remove(userId);
+    gameState.send();
+    // delete leaveMessage
     res.json({ delete_original: true });
   } else if (callback_id === 'kicker_delete') {
-    const { channel, ts } = JSON.parse(action);
-    slackApi
-      .deleteMessage(channel, ts)
-      .then(json => data.actionDeleteRes.push(json));
+    slackApi.deleteMessage(game.getChannel(), game.getTimeStamp());
+    // delete deleteMessage
     res.json({ delete_original: true });
   }
 
   res.status(200).end();
 });
-
-const joinGame = (message, action, userId, channel) => {
-  const players = getPlayers(message);
-  const index = helper.findStringInArray(players, userId);
-  const time = helper.createArrayOfMatches(message.text, 'time');
-
-  // join game
-  if (parseInt(action) === 0) {
-    if (index !== -1) return message;
-    // userId was not found
-    players.push(userId);
-  }
-
-  const newMessage = slack.lfmOrGameReady(time[0], players);
-  if (players.length >= 4) {
-    notifyPlayers(channel, players, message.text);
-  }
-
-  // leave button
-  const { ts } = message;
-  slackApi
-    .postEphemeral(channel, userId, {
-      attachments: slack.leaveMessage(channel, ts, newMessage)
-    })
-    .then(json => {});
-
-  return newMessage;
-};
-
-const leaveGame = (message, userId, channel) => {
-  const playerArray = getPlayers(message);
-  const index = helper.findStringInArray(playerArray, userId);
-  const time = helper.createArrayOfMatches(message.text, 'time');
-
-  playerArray.splice(index, 1);
-
-  return slack.createLookingForMoreMessage(
-    `<!channel> kicker ${time[0]}?`,
-    playerArray
-  );
-};
-
-const getPlayers = message => {
-  let playerArray = [];
-  // lookingForMoreMessage
-  if (message.attachments[0].fields.length <= 1) {
-    playerArray = [
-      ...helper.createArrayOfMatches(
-        message.attachments[0].fields[0].value,
-        'user'
-      )
-    ];
-    // gameReadyMessage
-  } else {
-    for (let attachement of message.attachments) {
-      for (let key in attachement) {
-        if (key === 'fields') {
-          for (let obj of attachement[key]) {
-            for (let key in obj) {
-              if (key === 'value') {
-                playerArray = [
-                  ...playerArray,
-                  ...helper.createArrayOfMatches(obj[key], 'user')
-                ];
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return playerArray;
-};
 
 const notifyPlayers = (channel, playerArray, text) => {
   setTimeout(() => {

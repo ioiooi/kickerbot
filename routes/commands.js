@@ -3,13 +3,13 @@ const router = express.Router();
 const slack = require('../lib/slackMessages');
 const slackApi = require('../lib/slackApi');
 const helper = require('../lib/helper');
-const data = require('../data');
+const { Game } = require('../rfctr/GameData');
+const GameState = require('../rfctr/GameState');
 
 router.post('/', async (req, res) => {
   const { text, user_id, channel_id } = req.body;
-  data.slashReq.push(req.body);
-  const time = helper.createArrayOfMatches(text, 'time');
-  const players = [user_id, ...helper.createArrayOfMatches(text, 'user')];
+  const time = helper.createArrayOfMatches('time', text);
+  const players = [user_id, ...helper.createArrayOfMatches('user', text)];
 
   if (!time.length) {
     res.json({ text: '`asap` or `HH:mm`' });
@@ -17,26 +17,23 @@ router.post('/', async (req, res) => {
     return;
   }
 
-  const game = slack.lfmOrGameReady(time[0], players);
+  const game = new Game(channel_id, null, time, players);
+  const gameState = new GameState(game);
+  const slackResponse = await gameState.send();
+  const { ts } = slackResponse;
+  game.setTimeStamp(ts);
 
-  const gameMessageRes = await slackApi.postMessage(channel_id, game);
-  const { channel, ts, message } = gameMessageRes;
-
+  // leave buttons
   for (let player of players) {
-    // leave button
-    slackApi
-      .postEphemeral(channel, player, {
-        attachments: slack.leaveMessage(channel, ts, message)
-      })
-      .then(json => {});
+    slackApi.postEphemeral(channel_id, player, {
+      attachments: slack.leaveMessage(game.getId())
+    });
   }
 
-  // delete button
-  slackApi
-    .postEphemeral(channel, user_id, {
-      attachments: slack.deleteGameMessage(channel, ts)
-    })
-    .then(json => data.slashEphemeralRes.push(json));
+  // game host - delete button
+  slackApi.postEphemeral(channel_id, user_id, {
+    attachments: slack.deleteGameMessage(game.getId())
+  });
 
   res.status(200).end();
 });
