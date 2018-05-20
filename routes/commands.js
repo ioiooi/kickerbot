@@ -8,7 +8,7 @@ const GameState = require('../rfctr/GameState');
 
 router.post('/', async (req, res) => {
   const { text, user_id, channel_id } = req.body;
-  const time = helper.createArrayOfMatches('time', text);
+  const time = helper.createArrayOfMatches('time', text)[0];
   const players = [user_id, ...helper.createArrayOfMatches('user', text)];
 
   if (!time.length) {
@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
     return;
   }
 
-  const game = new Game(channel_id, null, time, players);
+  const game = new Game(channel_id, time, players);
   const gameState = new GameState(game);
   const slackResponse = await gameState.send();
   const { ts } = slackResponse;

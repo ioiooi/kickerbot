@@ -20,7 +20,9 @@ router.post('/', (req, res) => {
     gameState.add(userId);
     gameState.send();
     // send leaveMessage
-    slackApi.postEphemeral(channelId, userId, slack.leaveMessage(gameId));
+    slackApi.postEphemeral(channelId, userId, {
+      attachments: slack.leaveMessage(gameId)
+    });
   } else if (callback_id === 'kicker_leave') {
     gameState.remove(userId);
     gameState.send();
@@ -34,28 +36,5 @@ router.post('/', (req, res) => {
 
   res.status(200).end();
 });
-
-const notifyPlayers = (channel, playerArray, text) => {
-  setTimeout(() => {
-    for (let player of playerArray) {
-      slackApi
-        .postEphemeral(channel, player, {
-          text: slack.gameReadyNotificationMessage(player)
-        })
-        .then(json => {});
-    }
-  }, getTimeout(text));
-};
-
-const getTimeout = text => {
-  const time = helper.createArrayOfMatches(text, 'time')[0];
-  if (time === 'asap') return 0;
-  const hours = parseInt(time.slice(0, 2));
-  const minutes = parseInt(time.slice(3, 5));
-  const date = new Date().setHours(hours, minutes);
-  const now = Date.now();
-  // 2 minutes before
-  return date - now - 120000;
-};
 
 module.exports = router;

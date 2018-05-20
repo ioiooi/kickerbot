@@ -1,14 +1,16 @@
-let GAME_ID = 100;
+let GAME_ID = 1;
 
 const GameMap = new Map();
 
 class Game {
-  constructor(channel = '', ts = 0, text = '', players = []) {
+  constructor(channel = '', text = '', players = []) {
     this.id = GAME_ID++;
     this.channel = channel;
-    this.ts = ts;
     this.text = text;
     this.players = players;
+    this.ts = null;
+    this.notified = false;
+    this._setUTCTime(text);
     // gameCreator, creationDate, scheduledTime, readyTime
 
     GameMap.set(this.id, this);
@@ -40,10 +42,35 @@ class Game {
 
   setText(text) {
     this.text = text;
+    this._setUTCTime(text);
   }
 
   getText() {
     return this.text;
+  }
+
+  notify() {
+    this.notified = true;
+  }
+
+  hasNotified() {
+    return this.notified;
+  }
+
+  _setUTCTime(text) {
+    if (text === 'asap') {
+      this.date = 0;
+
+      return;
+    }
+
+    const hours = parseInt(text.slice(0, 2));
+    const minutes = parseInt(text.slice(3, 5));
+    this.date = new Date().setHours(hours, minutes);
+  }
+
+  getUTCTime() {
+    return this.date;
   }
 }
 
