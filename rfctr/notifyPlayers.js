@@ -1,5 +1,4 @@
 const { GameMap } = require('./GameData');
-const GameState = require('./GameState');
 const slack = require('../lib/slackMessages');
 const slackApi = require('../lib/slackApi');
 

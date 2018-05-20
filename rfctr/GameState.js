@@ -1,11 +1,9 @@
 const slackApi = require('../lib/slackApi');
 const slackMessages = require('../lib/slackMessages');
-const { Game } = require('./GameData');
 
 module.exports = class GameState {
   constructor(Game) {
-    const players = Game.getPlayers();
-    if (players.length < 4) {
+    if (Game.getPlayers().length < 4) {
       this.currentState = new LookingForMore(Game);
     } else {
       this.currentState = new GameReady(Game);
