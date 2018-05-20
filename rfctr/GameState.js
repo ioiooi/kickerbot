@@ -58,7 +58,7 @@ class LookingForMore {
   send() {
     const ts = this.Game.getTimeStamp();
     const gameId = this.Game.getId();
-    const text = `<!channel> kicker ${this.Game.getText()}? GameID-${gameId}`;
+    const text = `<!channel> kicker ${this.Game.getText()}?`;
 
     if (!ts) {
       return slackApi.postMessage(
@@ -102,7 +102,7 @@ class GameReady {
 
   send() {
     const ts = this.Game.getTimeStamp();
-    const text = `kicker ${this.Game.getText()}? GameID-${this.Game.getId()}`;
+    const text = `kicker ${this.Game.getText()}?`;
 
     if (!ts) {
       return slackApi.postMessage(
