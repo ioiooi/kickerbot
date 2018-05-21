@@ -3,58 +3,37 @@ const router = express.Router();
 const slack = require('../lib/slackMessages');
 const slackApi = require('../lib/slackApi');
 const helper = require('../lib/helper');
-const data = require('../data');
+const { Game } = require('../rfctr/GameData');
+const GameState = require('../rfctr/GameState');
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { text, user_id, channel_id } = req.body;
-  data.slashReq.push(req.body);
-  const time = helper.createArrayOfMatches(text, 'time');
-  const playerArray = [user_id, ...helper.createArrayOfMatches(text, 'user')];
+  const time = helper.createArrayOfMatches('time', text)[0];
+  const players = [user_id, ...helper.createArrayOfMatches('user', text)];
 
-  if (time.length > 0) {
-    let message;
-    if (playerArray.length < 4) {
-      message = slack.createLookingForMoreMessage(
-        `<!channel> kicker ${time[0]}?`,
-        playerArray
-      );
-    } else {
-      message = slack.createGameReadyMessage(
-        `kicker ${time[0]}?`,
-        playerArray.slice(0, 4)
-      );
-    }
-
-    slackApi
-      .postMessage(channel_id, message)
-      .then(res => res.json())
-      .then(json => {
-        data.slashMessageRes.push(json);
-        const { channel, ts, message } = json;
-
-        // for loop every player in playerarray
-        for (let player of playerArray) {
-          // leave button
-          slackApi
-          .postEphemeral(channel, player, {
-            attachments: slack.createLeaveMessage(channel, ts, message)
-          })
-          .then(res => res.json())
-          .then(json => {});
-        }
-
-        // delete button
-        slackApi
-          .postEphemeral(channel, user_id, {
-            attachments: slack.createDeleteGameMessage(channel, ts)
-          })
-          .then(res => res.json())
-          .then(json => data.slashEphemeralRes.push(json));
-      })
-      .catch(err => console.log(err));
-  } else {
+  if (!time.length) {
     res.json({ text: '`asap` or `HH:mm`' });
+
+    return;
   }
+
+  const game = new Game(channel_id, time, players);
+  const gameState = new GameState(game);
+  const slackResponse = await gameState.send();
+  const { ts } = slackResponse;
+  game.setTimeStamp(ts);
+
+  // leave buttons
+  for (let player of players) {
+    slackApi.postEphemeral(channel_id, player, {
+      attachments: slack.leaveMessage(game.getId())
+    });
+  }
+
+  // game host - delete button
+  slackApi.postEphemeral(channel_id, user_id, {
+    attachments: slack.deleteGameMessage(game.getId())
+  });
 
   res.status(200).end();
 });
