@@ -10,9 +10,7 @@ class Game {
     this.players = players;
     this.ts = null;
     this.notified = false;
-    this._setUTCTime(text);
-    // gameCreator, creationDate, scheduledTime, readyTime
-
+    this.setUTCTime(this._createUTCTime(text));
     GameMap.set(this.id, this);
   }
 
@@ -57,16 +55,16 @@ class Game {
     return this.notified;
   }
 
-  _setUTCTime(text) {
-    if (text === 'asap') {
-      this.date = 0;
-
-      return;
-    }
+  _createUTCTime(text) {
+    if (text === 'asap') return 0;
 
     const hours = parseInt(text.slice(0, 2));
     const minutes = parseInt(text.slice(3, 5));
-    this.date = new Date().setHours(hours, minutes);
+    return new Date().setHours(hours, minutes);
+  }
+
+  setUTCTime(date) {
+    this.date = date;
   }
 
   getUTCTime() {

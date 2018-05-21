@@ -17,7 +17,7 @@ router.post('/', (req, res) => {
   const gameState = new GameState(game);
 
   if (callback_id === 'kicker_join') {
-    if (helper.findStringInArray(game.getPlayers(), userId) >= 0) {
+    if (helper.findStringInArray(game.getPlayers(), userId)) {
       res.status(200).end();
       return;
     }
