@@ -45,4 +45,8 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+router.get('/all', (req, res) => {
+  res.json([...GameMap]);
+});
+
 module.exports = router;
