@@ -57,9 +57,9 @@ class Game {
 
   _createUTCTime(text) {
     if (text === 'asap') return 0;
-
     const hours = parseInt(text.slice(0, 2));
     const minutes = parseInt(text.slice(3, 5));
+
     return new Date().setHours(hours, minutes);
   }
 
