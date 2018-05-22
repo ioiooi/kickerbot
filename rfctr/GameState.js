@@ -86,8 +86,9 @@ class GameReady {
     this.Game = Game;
   }
 
-  add(context, player) {
+  add() {
     console.log('Cant add more players.');
+
     return;
   }
 

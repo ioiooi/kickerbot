@@ -2,7 +2,7 @@ const { GameMap } = require('./GameData');
 const slack = require('../lib/slackMessages');
 const slackApi = require('../lib/slackApi');
 
-module.exports = notifyPlayers = () => {
+const notifyPlayers = () => {
   setInterval(() => {
     for (let Game of GameMap.values()) {
       if (
@@ -20,3 +20,5 @@ module.exports = notifyPlayers = () => {
     }
   }, 5000);
 };
+
+module.exports = notifyPlayers;

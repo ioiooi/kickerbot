@@ -18,6 +18,7 @@ router.get('/', async (req, res, next) => {
   // no full game was found
   if (!gameId) {
     res.status(404).json({ error: 'No Game with 4 Players found.' });
+
     return;
   }
 

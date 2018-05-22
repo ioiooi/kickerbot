@@ -1,0 +1,30 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true,
+    "node": true
+  },
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaVersion": 2018
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:prettier/recommended"
+  ],
+  "rules": {
+    "prettier/prettier": [
+      "error",
+      {
+        "singleQuote": true
+      }
+    ],
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^next" }],
+    "no-console": "off",
+    "newline-before-return": "error",
+    "valid-jsdoc": [
+      "error",
+      { "requireParamDescription": false, "requireReturnDescription": false }
+    ]
+  }
+}
