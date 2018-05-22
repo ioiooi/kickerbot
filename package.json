@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node app",
     "watch-node": "nodemon --delay 1000ms app",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "./node_modules/.bin/eslint . || true",
+    "lint-fix": "./node_modules/.bin/eslint . --fix || true"
   },
   "author": "Eugen Mayer",
   "license": "ISC",
@@ -16,5 +18,11 @@
     "express": "^4.16.3",
     "morgan": "^1.9.0",
     "node-fetch": "^2.1.2"
+  },
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-prettier": "^2.6.0",
+    "prettier": "^1.12.1"
   }
 }
