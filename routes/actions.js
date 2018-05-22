@@ -100,6 +100,10 @@ const inviteAction = (req, res) => {
   const gameState = new GameState(game);
   gameState.add(value);
   gameState.send();
+  // send leaveMessage
+  slackApi.postEphemeral(game.getChannel(), value, {
+    attachments: slack.leaveMessage(gameId)
+  });
 
   res.status(200).end();
 };
