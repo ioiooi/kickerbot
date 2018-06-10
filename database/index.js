@@ -4,7 +4,7 @@ const db = {};
 
 AWS.config.update(config);
 const docClient = new AWS.DynamoDB.DocumentClient();
-const TableName = 'kickerbot-games'
+const TableName = 'kickerbot-games';
 
 db['get'] = params => {
   const o = {
@@ -25,8 +25,7 @@ db['put'] = params => {
     TableName,
     Item: params,
     ConditionExpression:
-      'attribute_not_exists(#y) AND attribute_not_exists(title)',
-    ExpressionAttributeNames: { '#y': 'year' }
+      'attribute_not_exists(gameId) AND attribute_not_exists(createdAt)'
   };
 
   console.log(o);
