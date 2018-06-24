@@ -5,6 +5,7 @@ const slackApi = require('../lib/slackApi');
 const helper = require('../lib/helper');
 const { GameMap } = require('../rfctr/GameData');
 const GameState = require('../rfctr/GameState');
+const db = require('../database/index');
 
 router.post('/', (req, res) => {
   const { callback_id } = JSON.parse(req.body['payload']);
@@ -42,7 +43,7 @@ const joinAction = (req, res) => {
     actions: [{ value: gameId }],
     user: { id: userId }
   } = JSON.parse(req.body['payload']);
-  const game = GameMap.get(parseInt(gameId));
+  const game = GameMap.get(gameId);
   const gameState = new GameState(game);
 
   if (helper.findStringInArray(game.getPlayers(), userId)) {
@@ -53,6 +54,15 @@ const joinAction = (req, res) => {
 
   gameState.add(userId);
   gameState.send();
+
+  db.update({
+    Key: { gameId },
+    UpdateExpression: 'add players :p',
+    ExpressionAttributeValues: {
+      ':p': db.docClient.createSet([userId])
+    }
+  });
+
   // send leaveMessage
   slackApi.postEphemeral(game.getChannel(), userId, {
     attachments: slack.leaveMessage(gameId)
@@ -66,8 +76,17 @@ const leaveAction = (req, res) => {
     actions: [{ value: gameId }],
     user: { id: userId }
   } = JSON.parse(req.body['payload']);
-  const game = GameMap.get(parseInt(gameId));
+  const game = GameMap.get(gameId);
   const gameState = new GameState(game);
+
+  db.update({
+    Key: { gameId },
+    UpdateExpression: 'add #left :left delete players :left',
+    ExpressionAttributeNames: { '#left': 'left' },
+    ExpressionAttributeValues: {
+      ':left': db.docClient.createSet([userId])
+    }
+  });
 
   gameState.remove(userId);
   gameState.send();
@@ -79,14 +98,14 @@ const inviteAction = (req, res) => {
   const {
     actions: [
       {
-        name,
+        name: gameId,
         selected_options: [{ value }]
       }
     ],
     user: { id: userId }
   } = JSON.parse(req.body['payload']);
-  const gameId = helper.createArrayOfMatches('game', name)[0];
-  const game = GameMap.get(parseInt(gameId));
+  // const gameId = helper.createArrayOfMatches('game', name)[0];
+  const game = GameMap.get(gameId);
 
   if (helper.findStringInArray(game.getPlayers(), value)) {
     slackApi.postEphemeral(game.getChannel(), userId, {
@@ -96,6 +115,15 @@ const inviteAction = (req, res) => {
 
     return;
   }
+
+  db.update({
+    Key: { gameId },
+    UpdateExpression:
+      'add invited :inv, players :inv',
+    ExpressionAttributeValues: {
+      ':inv': db.docClient.createSet([value])
+    }
+  });
 
   const gameState = new GameState(game);
   gameState.add(value);
@@ -112,9 +140,17 @@ const deleteAction = (req, res) => {
   const {
     actions: [{ value: gameId }]
   } = JSON.parse(req.body['payload']);
-  const game = GameMap.get(parseInt(gameId));
+  const game = GameMap.get(gameId);
 
   slackApi.deleteMessage(game.getChannel(), game.getTimeStamp());
+
+  db.update({
+    Key: { gameId },
+    UpdateExpression: 'set deleted = :d',
+    ExpressionAttributeValues: {
+      ':d': true
+    }
+  });
   // delete deleteMessage
   res.json({ delete_original: true });
 };

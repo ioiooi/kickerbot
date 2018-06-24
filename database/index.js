@@ -1,12 +1,11 @@
 const AWS = require('aws-sdk');
 const config = require('./config')[process.env.NODE_ENV || 'development'];
-const db = {};
 
 AWS.config.update(config);
 const docClient = new AWS.DynamoDB.DocumentClient();
 const TableName = 'kickerbot-games';
 
-db['get'] = params => {
+const get = params => {
   const o = {
     TableName,
     Key: params
@@ -20,15 +19,13 @@ db['get'] = params => {
   });
 };
 
-db['put'] = params => {
+const put = params => {
   const o = {
     TableName,
     Item: params,
-    ConditionExpression:
-      'attribute_not_exists(gameId) AND attribute_not_exists(createdAt)'
+    ConditionExpression: 'attribute_not_exists(gameId)'
   };
 
-  console.log(o);
   return new Promise((resolve, reject) => {
     docClient.put(o, (err, data) => {
       if (err) reject(err);
@@ -37,7 +34,7 @@ db['put'] = params => {
   });
 };
 
-db['update'] = params => {
+const update = params => {
   const o = {
     TableName,
     ...params
@@ -51,7 +48,7 @@ db['update'] = params => {
   });
 };
 
-db['delete'] = params => {
+const deleteItem = params => {
   const o = {
     TableName,
     Key: params,
@@ -66,4 +63,10 @@ db['delete'] = params => {
   });
 };
 
-module.exports = db;
+module.exports = {
+  get,
+  put,
+  update,
+  deleteItem,
+  docClient
+};

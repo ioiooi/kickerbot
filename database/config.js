@@ -6,7 +6,7 @@ module.exports = {
   production: {
     region: 'eu-central-1',
     endpoint: 'https://dynamodb.eu-central-1.amazonaws.com',
-    accessKeyId: process.env.AWS_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SECRET_KEY
+    accessKeyId: process.env.AWS_ACCESS,
+    secretAccessKey: process.env.AWS_SECRET
   }
 };

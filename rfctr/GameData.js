@@ -1,10 +1,10 @@
-let GAME_ID = 1;
+const uuidv4 = require('uuid/v4');
 
 const GameMap = new Map();
 
 class Game {
   constructor(channel = '', text = '', players = []) {
-    this.id = GAME_ID++;
+    this.id = uuidv4();
     this.channel = channel;
     this.text = text;
     this.players = players;
