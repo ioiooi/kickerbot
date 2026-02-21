@@ -5,6 +5,7 @@ const slackApi = require('../lib/slackApi');
 const helper = require('../lib/helper');
 const { Game } = require('../rfctr/GameData');
 const GameState = require('../rfctr/GameState');
+const db = require('../database/index.js');
 
 router.post('/', async (req, res) => {
   const { text, user_id, channel_id } = req.body;
@@ -22,6 +23,17 @@ router.post('/', async (req, res) => {
   const slackResponse = await gameState.send();
   const { ts } = slackResponse;
   game.setTimeStamp(ts);
+
+  db.put({
+    gameId: game.getId(),
+    channelId: channel_id,
+    ts: parseFloat(ts),
+    host: user_id,
+    scheduledText: time,
+    scheduledUnix: helper.createDate(time),
+    players: db.docClient.createSet(players),
+    createdAt: Math.floor(Date.now() / 1000)
+  });
 
   // leave buttons
   for (let player of players) {
