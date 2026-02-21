@@ -1,30 +1,22 @@
 {
   "name": "kicker-slack-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "kicker",
+  "type": "module",
   "main": "app.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
-    "start": "node app",
-    "watch-node": "nodemon --delay 1000ms app",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "./node_modules/.bin/eslint . || true",
-    "lint-fix": "./node_modules/.bin/eslint . --fix || true"
+    "start": "node app.js",
+    "test": "node --test tests/domain/Game.test.js tests/domain/TeamAssigner.test.js tests/services/GameService.test.js tests/services/NotificationService.test.js"
   },
   "author": "Eugen Mayer",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.254.1",
-    "body-parser": "^1.18.2",
-    "dotenv": "^5.0.1",
-    "express": "^4.16.3",
-    "morgan": "^1.9.0",
-    "node-fetch": "^2.1.2",
-    "uuid": "^3.2.1"
-  },
-  "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-prettier": "^2.9.0",
-    "eslint-plugin-prettier": "^2.6.0",
-    "prettier": "^1.12.1"
+    "@aws-sdk/client-dynamodb": "^3",
+    "@aws-sdk/lib-dynamodb": "^3",
+    "@slack/bolt": "^3",
+    "dotenv": "^16"
   }
 }
