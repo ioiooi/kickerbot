@@ -1,8 +1,14 @@
-node_modules
-.vscode
-.idea
-*.css.map
-*.js.map
-nodemon.json
+node_modules/
 .env
-now.json
+.env.local
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Build artefacts
+*.js.map
+*.css.map
